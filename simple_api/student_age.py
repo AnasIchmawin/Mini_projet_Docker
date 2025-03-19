@@ -25,9 +25,9 @@ def unauthorized():
 
 # Charger les données au démarrage (avec gestion du fichier et conversion des âges)
 try:
-    student_age_file_path = os.environ.get('student_age_file_path', '/data/student_age.json')
+    student_age_file_path = os.environ.get('student_age_file_path', 'student_age.json')
 except NameError:
-    student_age_file_path  = '/data/student_age.json'
+    student_age_file_path  = 'student_age.json'
 
 student_age_file = open(student_age_file_path, "r")
 student_age = json.load(student_age_file)
