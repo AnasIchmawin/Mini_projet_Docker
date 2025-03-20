@@ -4,8 +4,17 @@ LABEL maintainer="Anas Ichmawin anasichmawin87@gmail.com, Personne 2 <email2@exa
 
 WORKDIR /
 
-COPY student_age.py requirements.txt student_age.json /
+RUN apt update -y && \
+    apt install -y python3-dev libsasl2-dev libldap2-dev libssl-dev 
+    
+COPY student_age.py requirements.txt /
 
-RUN pip install -r requirements.txt
+RUN pip3 install -r /requirements.txt
+
+RUN mkdir -p /data
+
+VOLUME ["/data"]
+
+EXPOSE 5000
 
 CMD ["python3", "./student_age.py"]

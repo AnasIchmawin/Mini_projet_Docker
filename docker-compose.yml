@@ -2,22 +2,23 @@ services:
   api:
     build: ./simple_api
     ports:
-      - "5000:5000"
+      - "5000:5000"  
     volumes:
-      - data:/data 
+      - data:/data  
+      - ./simple_api/student_age.json:/data/student_age.json
     networks:
-      - app_network
+      - app_network 
 
   website:
-    image: php:apache
+    image: php:apache 
     volumes:
-      - ./website:/var/www/html
+      - ./website:/var/www/html 
     depends_on:
       - api
     ports:
-      - "80:80"
+      - "80:80"  
     environment:
-      - USERNAME=root
+      - USERNAME=root 
       - PASSWORD=root
     networks:
       - app_network
