@@ -1,6 +1,6 @@
 FROM python:3.8-buster
 
-LABEL maintainer="Anas Ichmawin anasichmawin87@gmail.com, Personne 2 <email2@example.com>, Personne 3 <email3@example.com>"
+LABEL maintainer="Anas Ichmawin anasichmawin87@gmail.com, Mohamed-Amine Fatih fatihmohamedamine5@gmail.com, Mourad Imani imanimourad92@gmail.com"
 
 WORKDIR /
 
