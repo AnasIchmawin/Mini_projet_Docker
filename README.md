@@ -162,26 +162,29 @@ Le fichier `docker-compose-registry.yml` était vide et a été créé pour dép
 services:
   registry:
     image: registry:2
+    container_name: my_registry
     ports:
       - "5000:5000"
     volumes:
-      - registry-data:/var/lib/registry
-    restart: always
-    
-  ui:
+      - ./data:/var/lib/registry
+    networks:
+      - app_network
+
+  registry-ui:
     image: joxit/docker-registry-ui:latest
+    container_name: registry_ui
     ports:
       - "8080:80"
     environment:
-      - REGISTRY_URL=http://registry:5000
-      - REGISTRY_TITLE=SUPMIT Private Registry
-      - SINGLE_REGISTRY=true
+      - REGISTRY_URL=http://registry:5000 
     depends_on:
       - registry
-    restart: always
+    networks:
+      - app_network
 
-volumes:
-  registry-data:
+networks:
+  app_network:
+    driver: bridge
 ```
 
 ### Déploiement du Registry
