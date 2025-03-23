@@ -7,7 +7,7 @@ services:
       - data:/data  
       - ./simple_api/student_age.json:/data/student_age.json
     networks:
-      - app_network 
+      - api_network 
 
   website:
     image: php:apache 
@@ -21,10 +21,10 @@ services:
       - USERNAME=root 
       - PASSWORD=root
     networks:
-      - app_network
+      - api_network
 
 networks:
-  app_network:
+  api_network:
 
 volumes:
   data: 

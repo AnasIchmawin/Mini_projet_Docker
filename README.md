@@ -22,6 +22,7 @@ Le projet est organisé comme suit:
 .
 ├── docker-compose.yml
 ├── docker-compose-registry.yml
+├── config.yml
 ├── simple_api
 │   ├── Dockerfile
 │   ├── requirements.txt
@@ -110,7 +111,7 @@ services:
       - data:/data  
       - ./simple_api/student_age.json:/data/student_age.json
     networks:
-      - app_network 
+      - api_network 
 
   website:
     image: php:apache 
@@ -124,10 +125,10 @@ services:
       - USERNAME=root 
       - PASSWORD=root
     networks:
-      - app_network
+      - api_network
 
 networks:
-  app_network:
+  api_network:
 
 volumes:
   data: 
@@ -156,7 +157,7 @@ Ensuite, accédez à l'interface web via un navigateur à l'adresse http://local
 
 ### Configuration du Registry privé
 
-Le fichier `docker-compose-registry.yml` était vide et a été créé pour déployer un registry Docker privé avec une interface web:
+Le fichier `docker-compose-registry.yml` a été créé pour déployer un registry Docker privé et une interface utilisateur pour le gérer:
 
 ```yaml
 services:
@@ -164,11 +165,12 @@ services:
     image: registry:2
     container_name: my_registry
     ports:
-      - "5000:5000"
+      - "5001:5000"
     volumes:
       - ./data:/var/lib/registry
+      - ./config.yml:/etc/docker/registry/config.yml
     networks:
-      - app_network
+      - registry_network
 
   registry-ui:
     image: joxit/docker-registry-ui:latest
@@ -176,15 +178,37 @@ services:
     ports:
       - "8080:80"
     environment:
-      - REGISTRY_URL=http://registry:5000 
+      - REGISTRY_TITLE=MyRegistry
+      - REGISTRY_URL=http://localhost:5001 
+      - REGISTRY_HTTP_SECRET=mysecretkey
     depends_on:
       - registry
     networks:
-      - app_network
+      - registry_network
 
 networks:
-  app_network:
+  registry_network:
     driver: bridge
+```
+
+Le fichier `config.yml` a été créé pour configurer le registry Docker:
+
+```yaml
+version: 0.1
+log:
+  level: info
+http:
+  secret: "mysecretkey"
+  addr: :5000
+  headers:
+    X-Content-Type-Options: [nosniff]
+    Access-Control-Allow-Origin: ["http://localhost:8080"]
+    Access-Control-Allow-Methods: ["GET, PUT, DELETE, POST, OPTIONS"]
+    Access-Control-Allow-Headers: ["Authorization, Content-Type"]
+    Access-Control-Allow-Credentials: [true]
+storage:
+  filesystem:
+    rootdirectory: /var/lib/registry
 ```
 
 ### Déploiement du Registry
@@ -195,23 +219,37 @@ Pour déployer le registry:
 docker-compose -f docker-compose-registry.yml up -d
 ```
 
-**[Insérez ici une capture d'écran montrant l'interface du registry]**
+![deploy registry](images/deploy_registry.png)
 
 ### Publication de l'image sur le Registry
 
-Pour publier l'image de l'API sur le registry local:
+publier l'image de l'API sur le registry local:
 
 ```bash
 # Tagger l'image
-docker tag student-api localhost:5000/student-api:latest
+docker tag student_list-api localhost:5001/student_list-api:latest
 
 # Pousser l'image vers le registry
-docker push localhost:5000/student-api:latest
+docker push localhost:5001/student_list-api:latest
 ```
 
-**[Insérez ici une capture d'écran montrant le push de l'image vers le registry]**
+![push image of api](images/push_image_api.png)
 
-**[Insérez ici une capture d'écran de l'interface UI montrant l'image publiée]**
+publier l'image de website sur le registry local:
+
+```bash
+# Tagger l'image
+docker tag php:apache localhost:5001/student_list-website:latest
+
+# Pousser l'image vers le registry
+docker push localhost:5001/student_list-website:latest
+```
+
+![push image of website](images/push_image_website.png)
+
+vérifier que les images sont bien publiées sur le registry:
+
+![registry ui](images/registry_ui.png)
 
 ## Conclusion
 

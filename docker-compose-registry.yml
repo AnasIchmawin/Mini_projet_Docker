@@ -3,11 +3,12 @@ services:
     image: registry:2
     container_name: my_registry
     ports:
-      - "5000:5000"
+      - "5001:5000"
     volumes:
       - ./data:/var/lib/registry
+      - ./config.yml:/etc/docker/registry/config.yml
     networks:
-      - app_network
+      - registry_network
 
   registry-ui:
     image: joxit/docker-registry-ui:latest
@@ -15,12 +16,14 @@ services:
     ports:
       - "8080:80"
     environment:
-      - REGISTRY_URL=http://registry:5000 
+      - REGISTRY_TITLE=MyRegistry
+      - REGISTRY_URL=http://localhost:5001 
+      - REGISTRY_HTTP_SECRET=mysecretkey
     depends_on:
       - registry
     networks:
-      - app_network
+      - registry_network
 
 networks:
-  app_network:
+  registry_network:
     driver: bridge
