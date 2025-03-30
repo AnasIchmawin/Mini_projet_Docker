@@ -128,7 +128,7 @@ project/
 
     <img src="images/20.jpeg" style="border-radius: 7px;" width="500">
 
-- Configuration de l'instance Jenkins en ajoutant URL de jenkins.
+- Configuration de l'instance Jenkins en ajoutant URL de jenkins et le mot de passe d'accès.
 
     <img src="images/21.jpeg" style="border-radius: 7px;" width="500">
 
