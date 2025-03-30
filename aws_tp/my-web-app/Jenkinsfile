@@ -2,80 +2,85 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_HUB_REPO = "votre_username/mini-projet-docker"
-        DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
+        // Définir les variables d'environnement
+        DOCKER_HUB_USERNAME = credentials('docker-hub-credentials').username
+        DOCKER_HUB_PASSWORD = credentials('docker-hub-credentials').password
+        IMAGE_NAME = "${DOCKER_HUB_USERNAME}/mini-projet-docker"
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
     
     stages {
         stage('Checkout') {
             steps {
-                // Récupération du code source depuis GitHub
+                // Récupérer le code depuis GitHub
+                echo "Clonage du dépôt Git..."
                 checkout scm
-                echo "Code source récupéré avec succès"
             }
         }
         
         stage('Build Docker Image') {
             steps {
+                // Se déplacer dans le répertoire où se trouve le Dockerfile
                 dir('my-web-app') {
-                    // Construction de l'image Docker
-                    script {
-                        sh "docker build -t ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG} ."
-                        sh "docker tag ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG} ${DOCKER_HUB_REPO}:latest"
-                    }
-                    echo "Image Docker construite avec succès"
+                    echo "Construction de l'image Docker..."
+                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                    sh "docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest"
                 }
             }
         }
         
         stage('Test Application') {
             steps {
-                // Exécuter l'application dans un conteneur temporaire
-                sh "docker run -d --name test-container -p 8080:80 ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG}"
+                echo "Test de l'application..."
                 
-                // Vérifier que l'application fonctionne
-                sh "curl -s http://localhost:8080 | grep 'Déploiement Docker avec Jenkins'"
+                // Lancer un conteneur temporaire pour tester
+                sh "docker run -d --name test-container -p 8080:80 ${IMAGE_NAME}:${IMAGE_TAG}"
                 
-                // Arrêter et supprimer le conteneur de test
+                // Attendre que le conteneur démarre
+                sh "sleep 5"
+                
+                // Test simple : vérifier si le serveur est actif
+                sh "curl -s http://localhost:8080 | grep 'Mini Projet Docker'"
+                
+                // Nettoyage après le test
                 sh "docker stop test-container"
                 sh "docker rm test-container"
-                
-                echo "Tests effectués avec succès"
             }
         }
         
         stage('Push to Docker Hub') {
             steps {
-                // Pousser l'image vers Docker Hub
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', 
-                                                    usernameVariable: 'DOCKER_USERNAME', 
-                                                    passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                        sh "docker push ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG}"
-                        sh "docker push ${DOCKER_HUB_REPO}:latest"
-                    }
-                }
-                echo "Image poussée sur Docker Hub avec succès"
+                echo "Publication de l'image sur Docker Hub..."
+                
+                // Connexion à Docker Hub
+                sh "echo ${DOCKER_HUB_PASSWORD} | docker login -u ${DOCKER_HUB_USERNAME} --password-stdin"
+                
+                // Pousser l'image
+                sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                sh "docker push ${IMAGE_NAME}:latest"
+                
+                // Déconnexion de Docker Hub
+                sh "docker logout"
             }
         }
         
         stage('Clean Up') {
             steps {
-                // Nettoyer les images locales
-                sh "docker rmi ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG}"
-                sh "docker rmi ${DOCKER_HUB_REPO}:latest"
-                echo "Nettoyage effectué avec succès"
+                echo "Nettoyage des ressources locales..."
+                
+                // Supprimer les images locales
+                sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG}"
+                sh "docker rmi ${IMAGE_NAME}:latest"
             }
         }
     }
     
     post {
         success {
-            echo "Pipeline exécuté avec succès !"
+            echo "Pipeline exécuté avec succès! L'image a été construite et publiée sur Docker Hub."
         }
         failure {
-            echo "Pipeline a échoué. Vérifiez les logs pour plus d'informations."
+            echo "Échec de l'exécution du pipeline. Vérifiez les logs pour plus de détails."
         }
     }
 }

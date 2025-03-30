@@ -1,17 +1,14 @@
-# Utiliser une image de base Nginx
+# Utiliser nginx comme image de base
 FROM nginx:alpine
 
-# Copier le fichier index.html dans le dossier html de Nginx
+# Informations sur le mainteneur
+LABEL maintainer="votre_email@exemple.com"
+
+# Copier le fichier index.html dans le répertoire de nginx
 COPY index.html /usr/share/nginx/html/
-
-# Créer un dossier pour les images
-RUN mkdir -p /usr/share/nginx/html/images
-
-# Copier l'image dans le dossier images
-COPY ../images/1.jpeg /usr/share/nginx/html/images/
 
 # Exposer le port 80
 EXPOSE 80
 
-# Commande pour démarrer Nginx
+# Commande de démarrage (utilise le démarrage par défaut de nginx)
 CMD ["nginx", "-g", "daemon off;"]

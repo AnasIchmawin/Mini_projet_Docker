@@ -3,52 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Application Web Docker</title>
+    <title>Mini Projet Docker</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            line-height: 1.6;
             margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-            color: #333;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
         }
         .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
+            text-align: center;
             padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
         h1 {
             color: #2c3e50;
-            text-align: center;
         }
-        img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 20px auto;
+        p {
+            color: #7f8c8d;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Déploiement Docker avec Jenkins</h1>
-        <p>Cette application démontre l'intégration continue et le déploiement continu avec Docker et Jenkins.</p>
-        <img src="1.jpeg" alt="Docker et Jenkins Workflow">
-        <p>Voici les étapes que nous avons utilisées:</p>
-        <ol>
-            <li>Clone du dépôt depuis GitHub</li>
-            <li>Construction de l'image Docker</li>
-            <li>Test de l'application</li>
-            <li>Push de l'image sur Docker Hub</li>
-        </ol>
-        <p>Date de construction: <span id="buildDate"></span></p>
+        <h1>Mini Projet Docker</h1>
+        <p>Application web déployée avec succès via Docker et Jenkins</p>
+        <p>Version: 1.0</p>
     </div>
-    <script>
-        document.getElementById('buildDate').textContent = new Date().toLocaleString();
-    </script>
 </body>
 </html>
