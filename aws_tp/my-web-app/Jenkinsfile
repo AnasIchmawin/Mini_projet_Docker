@@ -2,10 +2,9 @@ pipeline {
     agent any
     
     environment {
-        // Définir les variables d'environnement
-        DOCKER_HUB_USERNAME = credentials('docker-hub-credentials').username
-        DOCKER_HUB_PASSWORD = credentials('docker-hub-credentials').password
-        IMAGE_NAME = "${DOCKER_HUB_USERNAME}/mini-projet-docker"
+        // Utiliser la méthode correcte pour les identifiants
+        DOCKER_CREDENTIALS = credentials('docker-hub-credentials')
+        IMAGE_NAME = "mini-projet-docker"
         IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
     
@@ -23,8 +22,8 @@ pipeline {
                 // Se déplacer dans le répertoire où se trouve le Dockerfile
                 dir('my-web-app') {
                     echo "Construction de l'image Docker..."
-                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
-                    sh "docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest"
+                    sh "docker build -t ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:${IMAGE_TAG} ."
+                    sh "docker tag ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:latest"
                 }
             }
         }
@@ -34,7 +33,7 @@ pipeline {
                 echo "Test de l'application..."
                 
                 // Lancer un conteneur temporaire pour tester
-                sh "docker run -d --name test-container -p 8080:80 ${IMAGE_NAME}:${IMAGE_TAG}"
+                sh "docker run -d --name test-container -p 8080:80 ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:${IMAGE_TAG}"
                 
                 // Attendre que le conteneur démarre
                 sh "sleep 5"
@@ -52,12 +51,12 @@ pipeline {
             steps {
                 echo "Publication de l'image sur Docker Hub..."
                 
-                // Connexion à Docker Hub
-                sh "echo ${DOCKER_HUB_PASSWORD} | docker login -u ${DOCKER_HUB_USERNAME} --password-stdin"
+                // Connexion à Docker Hub avec les identifiants
+                sh 'echo $DOCKER_CREDENTIALS_PSW | docker login -u $DOCKER_CREDENTIALS_USR --password-stdin'
                 
                 // Pousser l'image
-                sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
-                sh "docker push ${IMAGE_NAME}:latest"
+                sh "docker push ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:${IMAGE_TAG}"
+                sh "docker push ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:latest"
                 
                 // Déconnexion de Docker Hub
                 sh "docker logout"
@@ -69,8 +68,8 @@ pipeline {
                 echo "Nettoyage des ressources locales..."
                 
                 // Supprimer les images locales
-                sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG}"
-                sh "docker rmi ${IMAGE_NAME}:latest"
+                sh "docker rmi ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:${IMAGE_TAG}"
+                sh "docker rmi ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:latest"
             }
         }
     }
