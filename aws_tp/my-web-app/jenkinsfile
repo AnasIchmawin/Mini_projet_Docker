@@ -25,7 +25,7 @@ pipeline {
         stage('Construire l\'Image Docker') {
             steps {
                 echo 'Construction de l\'image Docker...'
-                dir('aws_tp/my-web-app') {
+                dir('aws_tp/my-web-app') { // Assurez-vous que le répertoire est correct
                     script {
                         dockerImage = docker.build("${DOCKER_IMAGE}")
                     }
