@@ -9,7 +9,7 @@ pipeline {
         stage('Cloner le Code Source') {
             steps {
                 echo 'Clonage du code source...'
-                git 'https://github.com/votre-repo/aws_tp.git'
+                git 'https://github.com/AnasIchmawin/Mini_projet_Docker.git'
             }
         }
 
