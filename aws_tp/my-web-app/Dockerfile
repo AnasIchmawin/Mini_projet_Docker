@@ -1,8 +1,8 @@
-# Utiliser l'image Nginx officielle
-FROM nginx:latest
+# Utiliser une image de base
+FROM nginx:alpine
 
-# Copier le contenu de l'application
-COPY index.html /usr/share/nginx/html
+# Copier le fichier index.html dans le répertoire approprié
+COPY index.html /usr/share/nginx/html/index.html
 
 # Exposer le port 80
 EXPOSE 80

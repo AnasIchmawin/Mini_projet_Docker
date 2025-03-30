@@ -1,41 +1,37 @@
 pipeline {
     agent any
+
+    environment {
+        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials')
+    }
+
     stages {
-        stage('Clonage du Dépôt') {
+        stage('Clone Repository') {
             steps {
-                echo "📂 Clonage du dépôt GitHub..."
-                git 'https://github.com/AnasIchmawin/Mini_projet_Docker.git'
+                git 'https://github.com/AnasIchmawin/Mini_projet_Docker'
             }
         }
         stage('Build Docker Image') {
             steps {
-                echo "🔧 Construction de l'image Docker..."
-                sh 'docker build -t docker.io/fatihmedamine/simple-jenkins-app:latest -f my-web-app/Dockerfile my-web-app'
+                script {
+                    dockerImage = docker.build("my-web-app:${env.BUILD_ID}")
+                }
             }
         }
-        stage('Test Docker') {
+        stage('Test Application') {
             steps {
-                echo "🚀 Test de l'image Docker..."
-                sh 'docker run -d -p 8080:80 docker.io/fatihmedamine/simple-jenkins-app:latest'
+                sh 'docker run -d -p 8080:80 my-web-app:${env.BUILD_ID}'
+                sh 'curl http://localhost:8080'
             }
         }
         stage('Push Docker Image') {
             steps {
-                echo "📤 Push de l'image Docker..."
-                sh 'docker push docker.io/fatihmedamine/simple-jenkins-app:latest'
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
+                        dockerImage.push("${env.BUILD_ID}")
+                    }
+                }
             }
-        }
-    }
-    post {
-        always {
-            echo "🧹 Nettoyage de l'environnement..."
-            sh 'docker system prune -f'
-        }
-        failure {
-            echo "❌ Échec du pipeline !"
-        }
-        success {
-            echo "✅ Pipeline réussi !"
         }
     }
 }
