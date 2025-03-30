@@ -12,12 +12,20 @@ pipeline {
         stage('Clonage du Dépôt') {
             steps {
                 script {
-                    echo "📂 Clonage du dépôt GitHub..."
+                    echo '📂 Clonage du dépôt GitHub...'
                     git url: 'https://github.com/AnasIchmawin/Mini_projet_Docker.git', branch: 'main'
                 }
             }
         }
 
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo "🔧 Construction de l'image Docker..."
+                    sh 'docker build -t docker.io/fatihmedamine/simple-jenkins-app:latest -f aws_tp/my-web-app/Dockerfile .'
+                }
+            }
+        }
         stage('Build Docker Image') {
             steps {
                 script {
@@ -32,7 +40,7 @@ pipeline {
         stage('Test Docker') {
             steps {
                 script {
-                    echo "🟢 Lancement des tests dans Docker..."
+                    echo '🟢 Lancement des tests dans Docker...'
                     sh '''
                         docker run --rm $DOCKER_REGISTRY/$DOCKER_REPO:$DOCKER_TAG sh -c "echo 'Lancer les tests ici'"
                     '''
@@ -58,13 +66,13 @@ pipeline {
     post {
         always {
             echo "🧹 Nettoyage de l'environnement..."
-            sh 'docker system prune -f' 
+            sh 'docker system prune -f'
         }
         success {
-            echo "✅ Pipeline terminé avec succès !"
+            echo '✅ Pipeline terminé avec succès !'
         }
         failure {
-            echo "❌ Échec du pipeline !"
+            echo '❌ Échec du pipeline !'
         }
     }
 }
