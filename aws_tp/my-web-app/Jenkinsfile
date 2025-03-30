@@ -1,6 +1,13 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE_NAME = 'mon-image-docker'
+        DOCKER_TAG = 'latest'
+        DOCKER_REGISTRY = 'docker.io'
+        DOCKER_REPO = 'fatihmedamine/simple-jenkins-app' // Ton repository Docker Hub
+    }
+
     stages {
         stage('Clonage du Dépôt') {
             steps {
@@ -11,29 +18,38 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    echo "🔧 Compilation et Build..."
-                    sh 'echo "Build effectué avec succès !"'
+                    echo "🔧 Construction de l'image Docker..."
+                    sh '''
+                        docker build -t $DOCKER_REGISTRY/$DOCKER_REPO:$DOCKER_TAG .
+                    '''
                 }
             }
         }
 
-        stage('Tests') {
+        stage('Test Docker') {
             steps {
                 script {
-                    echo "🟢 Lancement des tests..."
-                    sh 'echo "Tous les tests sont passés avec succès !"'
+                    echo "🟢 Lancement des tests dans Docker..."
+                    sh '''
+                        docker run --rm $DOCKER_REGISTRY/$DOCKER_REPO:$DOCKER_TAG sh -c "echo 'Lancer les tests ici'"
+                    '''
                 }
             }
         }
 
-        stage('Déploiement') {
+        stage('Push Docker Image') {
             steps {
                 script {
-                    echo "🚀 Déploiement de l'application..."
-                    sh 'echo "Application déployée avec succès !"'
+                    echo "🚀 Pousser l'image Docker sur Docker Hub..."
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh '''
+                            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                            docker push $DOCKER_REGISTRY/$DOCKER_REPO:$DOCKER_TAG
+                        '''
+                    }
                 }
             }
         }
@@ -42,6 +58,7 @@ pipeline {
     post {
         always {
             echo "🧹 Nettoyage de l'environnement..."
+            sh 'docker system prune -f' 
         }
         success {
             echo "✅ Pipeline terminé avec succès !"
