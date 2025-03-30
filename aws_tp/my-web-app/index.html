@@ -1,10 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>CI/CD avec Jenkins et Docker</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Web Docker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px auto;
+        }
+    </style>
 </head>
 <body>
-    <h1>Déploiement Automatisé avec Jenkins et Docker</h1>
-    <p>Bravo ! Le pipeline CI/CD fonctionne !</p>
+    <div class="container">
+        <h1>Déploiement Docker avec Jenkins</h1>
+        <p>Cette application démontre l'intégration continue et le déploiement continu avec Docker et Jenkins.</p>
+        <img src="1.jpeg" alt="Docker et Jenkins Workflow">
+        <p>Voici les étapes que nous avons utilisées:</p>
+        <ol>
+            <li>Clone du dépôt depuis GitHub</li>
+            <li>Construction de l'image Docker</li>
+            <li>Test de l'application</li>
+            <li>Push de l'image sur Docker Hub</li>
+        </ol>
+        <p>Date de construction: <span id="buildDate"></span></p>
+    </div>
+    <script>
+        document.getElementById('buildDate').textContent = new Date().toLocaleString();
+    </script>
 </body>
 </html>
