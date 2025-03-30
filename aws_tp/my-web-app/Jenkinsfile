@@ -1,68 +1,41 @@
 pipeline {
     agent any
-
-    environment {
-        DOCKER_IMAGE_NAME = 'mon-image-docker'
-        DOCKER_TAG = 'latest'
-        DOCKER_REGISTRY = 'docker.io'
-        DOCKER_REPO = 'fatihmedamine/simple-jenkins-app' // Ton repository Docker Hub
-    }
-
     stages {
         stage('Clonage du Dépôt') {
             steps {
-                script {
-                    echo '📂 Clonage du dépôt GitHub...'
-                    git url: 'https://github.com/AnasIchmawin/Mini_projet_Docker.git', branch: 'main'
-                }
+                echo "📂 Clonage du dépôt GitHub..."
+                git 'https://github.com/AnasIchmawin/Mini_projet_Docker.git'
             }
         }
-
         stage('Build Docker Image') {
             steps {
-                script {
-                    echo "🔧 Construction de l'image Docker..."
-                    sh 'docker build -t docker.io/fatihmedamine/simple-jenkins-app:latest -f aws_tp/my-web-app/Dockerfile .'
-                }
+                echo "🔧 Construction de l'image Docker..."
+                sh 'docker build -t docker.io/fatihmedamine/simple-jenkins-app:latest -f my-web-app/Dockerfile my-web-app'
             }
         }
-
         stage('Test Docker') {
             steps {
-                script {
-                    echo '🟢 Lancement des tests dans Docker...'
-                    sh '''
-                        docker run --rm $DOCKER_REGISTRY/$DOCKER_REPO:$DOCKER_TAG sh -c "echo 'Lancer les tests ici'"
-                    '''
-                }
+                echo "🚀 Test de l'image Docker..."
+                sh 'docker run -d -p 8080:80 docker.io/fatihmedamine/simple-jenkins-app:latest'
             }
         }
-
         stage('Push Docker Image') {
             steps {
-                script {
-                    echo "🚀 Pousser l'image Docker sur Docker Hub..."
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh '''
-                            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                            docker push $DOCKER_REGISTRY/$DOCKER_REPO:$DOCKER_TAG
-                        '''
-                    }
-                }
+                echo "📤 Push de l'image Docker..."
+                sh 'docker push docker.io/fatihmedamine/simple-jenkins-app:latest'
             }
         }
     }
-
     post {
         always {
             echo "🧹 Nettoyage de l'environnement..."
             sh 'docker system prune -f'
         }
-        success {
-            echo '✅ Pipeline terminé avec succès !'
-        }
         failure {
-            echo '❌ Échec du pipeline !'
+            echo "❌ Échec du pipeline !"
+        }
+        success {
+            echo "✅ Pipeline réussi !"
         }
     }
 }
