@@ -5,7 +5,7 @@ pipeline {
         stage('Cloner le Code Source') {
             steps {
                 echo 'Clonage du code source...'
-                git 'https://github.com/AnasIchmawin/Mini_projet_Docker.git'
+                    git url: 'https://github.com/AnasIchmawin/Mini_projet_Docker.git', branch: 'main'
             }
         }
 
