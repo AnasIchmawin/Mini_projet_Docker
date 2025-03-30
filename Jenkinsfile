@@ -1,25 +1,19 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_USERNAME = 'fatihmedamine'
-    }
-
     stages {
         stage('Cloner le Code Source') {
             steps {
                 echo 'Clonage du code source...'
-                git branch: 'main', url: 'https://github.com/AnasIchmawin/Mini_projet_Docker.git'
+                git 'https://github.com/AnasIchmawin/Mini_projet_Docker.git'
             }
         }
 
         stage('Construire l\'Image Docker') {
             steps {
                 echo 'Construction de l\'image Docker...'
-                dir('aws_tp/my-web-app') {
-                    script {
-                        dockerImage = docker.build("${DOCKER_USERNAME}/my-web-app:latest")
-                    }
+                script {
+                    dockerImage = docker.build("my-web-app:latest")
                 }
             }
         }
@@ -27,10 +21,8 @@ pipeline {
         stage('Tester l\'Application') {
             steps {
                 echo 'Test de l\'application...'
-                sh "docker run -d --name test-container -p 80:80 ${DOCKER_USERNAME}/my-web-app:latest"
-                sh 'sleep 5'
-                sh 'curl -s http://localhost:80 || exit 1'
-                sh 'docker stop test-container && docker rm test-container'
+                sh 'docker run -d -p 80:80 my-web-app:latest'
+                sh 'curl http://localhost'
             }
         }
 
@@ -43,12 +35,6 @@ pipeline {
                     }
                 }
             }
-        }
-    }
-
-    post {
-        always {
-            cleanWs()
         }
     }
 }
