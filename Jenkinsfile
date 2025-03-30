@@ -17,7 +17,6 @@ pipeline {
             steps {
                 echo 'Construction de l\'image Docker...'
                 dir('aws_tp/my-web-app') {
-                    /* groovylint-disable-next-line NestedBlockDepth */
                     script {
                         dockerImage = docker.build("${DOCKER_USERNAME}/my-web-app:latest")
                     }
@@ -39,7 +38,6 @@ pipeline {
             steps {
                 echo 'Push de l\'image sur Docker Hub...'
                 script {
-                    /* groovylint-disable-next-line NestedBlockDepth */
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
                         dockerImage.push('latest')
                     }
