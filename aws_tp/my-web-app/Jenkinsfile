@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/AnasIchmawin/Mini_projet_Docker'
+                git branch: 'main', url: 'https://github.com/AnasIchmawin/Mini_projet_Docker'
             }
         }
         stage('Build Docker Image') {
