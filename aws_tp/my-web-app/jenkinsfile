@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = 'my-web-app:latest'
+    }
+
+    stages {
+        stage('Cloner le Code Source') {
+            steps {
+                echo 'Clonage du code source...'
+                git 'https://github.com/AnasIchmawin/Mini_projet_Docker.git'
+            }
+        }
+
+        stage('Naviguer au Projet') {
+            steps {
+                echo 'Accès au dossier my-web-app...'
+                dir('aws_tp/my-web-app') {
+                    script {
+                        if (!fileExists('Dockerfile')) {
+                            error 'Le dossier my-web-app ne contient pas de Dockerfile !'
+                        }
+                    }
+                    echo 'Dans le dossier my-web-app'
+                }
+            }
+        }
+
+        stage('Construire l\'Image Docker') {
+            steps {
+                echo 'Construction de l\'image Docker...'
+                dir('aws_tp/my-web-app') {
+                    script {
+                        dockerImage = docker.build("${DOCKER_IMAGE}")
+                    }
+                }
+            }
+        }
+
+        stage('Tester l\'Application') {
+            steps {
+                echo 'Test de l\'application...'
+                dir('aws_tp/my-web-app') {
+                    sh 'docker run -d -p 80:80 my-web-app:latest'
+                    sh 'curl http://localhost'
+                }
+            }
+        }
+
+        stage('Pousser l\'Image sur Docker Hub') {
+            steps {
+                echo 'Push de l\'image sur Docker Hub...'
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+                        dockerImage.push('latest')
+                    }
+                }
+            }
+        }
+    }
+}
