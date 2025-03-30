@@ -26,16 +26,6 @@ pipeline {
                 }
             }
         }
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    echo "🔧 Construction de l'image Docker..."
-                    sh '''
-                        docker build -t $DOCKER_REGISTRY/$DOCKER_REPO:$DOCKER_TAG .
-                    '''
-                }
-            }
-        }
 
         stage('Test Docker') {
             steps {
