@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'my-web-app:latest'
+        DOCKER_USERNAME = 'fatihmedamine'
     }
 
     stages {
@@ -13,21 +13,13 @@ pipeline {
             }
         }
 
-        stage('Naviguer au Projet') {
-            steps {
-                echo 'Accès au dossier my-web-app...'
-                dir('aws_tp/my-web-app') {
-                    echo 'Dans le dossier my-web-app'
-                }
-            }
-        }
-
         stage('Construire l\'Image Docker') {
             steps {
                 echo 'Construction de l\'image Docker...'
-                dir('aws_tp/my-web-app') { // Assurez-vous que le répertoire est correct
+                dir('aws_tp/my-web-app') {
+                    /* groovylint-disable-next-line NestedBlockDepth */
                     script {
-                        dockerImage = docker.build("${DOCKER_IMAGE}")
+                        dockerImage = docker.build("${DOCKER_USERNAME}/my-web-app:latest")
                     }
                 }
             }
@@ -36,10 +28,10 @@ pipeline {
         stage('Tester l\'Application') {
             steps {
                 echo 'Test de l\'application...'
-                dir('aws_tp/my-web-app') {
-                    sh 'docker run -d -p 80:80 my-web-app:latest'
-                    sh 'curl http://localhost'
-                }
+                sh "docker run -d --name test-container -p 80:80 ${DOCKER_USERNAME}/my-web-app:latest"
+                sh 'sleep 5'
+                sh 'curl -s http://localhost:80 || exit 1'
+                sh 'docker stop test-container && docker rm test-container'
             }
         }
 
@@ -47,11 +39,18 @@ pipeline {
             steps {
                 echo 'Push de l\'image sur Docker Hub...'
                 script {
+                    /* groovylint-disable-next-line NestedBlockDepth */
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
                         dockerImage.push('latest')
                     }
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
         }
     }
 }
