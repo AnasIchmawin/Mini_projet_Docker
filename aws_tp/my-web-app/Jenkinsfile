@@ -67,10 +67,12 @@ pipeline {
         stage('Deploy in Review') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh "docker rm -f deploy-${BUILD_NUMBER} || true"
                     sh "docker run -d -p ${DEPLOY_PORT}:80 --name deploy-${BUILD_NUMBER} $DOCKER_USER/my-new-img"
-                }
-            }
         }
+    }
+}
+
     }
     
     post {
