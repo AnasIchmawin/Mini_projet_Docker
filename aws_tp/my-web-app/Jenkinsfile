@@ -18,7 +18,6 @@ pipeline {
         stage('Nettoyer les anciens conteneurs') {
             steps {
                 script {
-                    // Arrêter et supprimer les conteneurs existants
                     sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker stop'
                     sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker rm'
                     
@@ -27,9 +26,8 @@ pipeline {
                         sh 'docker ps -q --filter "ancestor=$DOCKER_USER/my-new-img" | xargs -r docker rm'
                     }
                     
-                    // Vérifier si le port est libre
                     sh "netstat -tuln | grep ${APP_PORT} || true"
-                    sh "lsof -i :${APP_PORT} | grep LISTEN && { echo 'Killing process using port ${APP_PORT}'; fuser -k ${APP_PORT}/tcp; } || echo 'Port ${APP_PORT} is free'"
+                    sh "lsof -i :${APP_PORT} | grep LISTEN && { echo 'Killing process using port ${APP_PORT}'; fuser -k ${APP_PORT}/tcp; } || echo 'Port ${APP_PORT} est libre'"
                 }
             }
         }
@@ -45,12 +43,12 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    // Vérifier si le port est libre avant de lancer le conteneur
-                    sh "lsof -i :${APP_PORT} || true"
-                    // Exécuter le conteneur de test
+                    def portInUse = sh(script: "lsof -i :${APP_PORT}", returnStatus: true) == 0
+                    if (portInUse) {
+                        error "Le port ${APP_PORT} est déjà utilisé. Veuillez libérer le port et réessayer."
+                    }
                     sh "docker run -d -p ${APP_PORT}:80 --name ${CONTAINER_NAME} my-web-img"
                     sh 'sleep 5'
-                    // Tester l'application
                     sh "curl -f http://localhost:${APP_PORT} || exit 1"
                 }
             }
@@ -79,10 +77,7 @@ pipeline {
         always {
             script {
                 try {
-                    // Nettoyer le conteneur de test
                     sh "docker rm -f ${CONTAINER_NAME} || true"
-                    
-                    // Supprimer les images Docker
                     sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker stop'
                     sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker rm'
                     
