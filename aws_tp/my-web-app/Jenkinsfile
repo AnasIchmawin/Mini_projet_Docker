@@ -2,84 +2,106 @@ pipeline {
     agent any
     
     environment {
-        // Utiliser la méthode correcte pour les identifiants
-        DOCKER_CREDENTIALS = credentials('docker-hub-credentials')
-        IMAGE_NAME = "mini-projet-docker"
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        APP_PORT = '8087'
+        DEPLOY_PORT = '9090'
+        CONTAINER_NAME = "test-container-${BUILD_NUMBER}"
     }
     
     stages {
-        stage('Checkout') {
+        stage('Cloner le repo') {
             steps {
-                // Récupérer le code depuis GitHub
-                echo "Clonage du dépôt Git..."
-                checkout scm
+                echo "clonage"
+                git branch: 'main', url: 'https://github.com/AnasIchmawin/Mini_projet_Docker'
             }
         }
         
-        stage('Build Docker Image') {
+        stage('Nettoyer les anciens conteneurs') {
             steps {
-                // Se déplacer dans le répertoire où se trouve le Dockerfile
-                dir('aws_tp/my-web-app') {
-                    echo "Construction de l'image Docker..."
-                    sh "docker build -t ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:${IMAGE_TAG} ."
-                    sh "docker tag ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:latest"
+                script {
+                    // Arrêter et supprimer les conteneurs existants
+                    sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker stop'
+                    sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker rm'
+                    
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh 'docker ps -q --filter "ancestor=$DOCKER_USER/my-new-img" | xargs -r docker stop'
+                        sh 'docker ps -q --filter "ancestor=$DOCKER_USER/my-new-img" | xargs -r docker rm'
+                    }
+                    
+                    // Vérifier si le port est libre
+                    sh "netstat -tuln | grep ${APP_PORT} || true"
+                    sh "lsof -i :${APP_PORT} | grep LISTEN && { echo 'Killing process using port ${APP_PORT}'; fuser -k ${APP_PORT}/tcp; } || echo 'Port ${APP_PORT} is free'"
                 }
             }
         }
         
-        stage('Test Application') {
+        stage('Build') {
             steps {
-                echo "Test de l'application..."
-                
-                // Lancer un conteneur temporaire pour tester
-                sh "docker run -d --name test-container -p 8080:80 ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:${IMAGE_TAG}"
-                
-                // Attendre que le conteneur démarre
-                sh "sleep 5"
-                
-                // Test simple : vérifier si le serveur est actif
-                sh "curl -s http://localhost:8080 | grep 'Mini Projet Docker'"
-                
-                // Nettoyage après le test
-                sh "docker stop test-container"
-                sh "docker rm test-container"
+                dir('aws_tp/my-web-app') {
+                    sh 'docker build -t my-web-img .'
+                }
             }
         }
         
-        stage('Push to Docker Hub') {
+        stage('Test') {
             steps {
-                echo "Publication de l'image sur Docker Hub..."
-                
-                // Connexion à Docker Hub avec les identifiants
-                sh 'echo $DOCKER_CREDENTIALS_PSW | docker login -u $DOCKER_CREDENTIALS_USR --password-stdin'
-                
-                // Pousser l'image
-                sh "docker push ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:${IMAGE_TAG}"
-                sh "docker push ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:latest"
-                
-                // Déconnexion de Docker Hub
-                sh "docker logout"
+                script {
+                    // Vérifier si le port est libre avant de lancer le conteneur
+                    sh "lsof -i :${APP_PORT} || true"
+                    // Exécuter le conteneur de test
+                    sh "docker run -d -p ${APP_PORT}:80 --name ${CONTAINER_NAME} my-web-img"
+                    sh 'sleep 5'
+                    // Tester l'application
+                    sh "curl -f http://localhost:${APP_PORT} || exit 1"
+                }
             }
         }
         
-        stage('Clean Up') {
+        stage('Release') {
             steps {
-                echo "Nettoyage des ressources locales..."
-                
-                // Supprimer les images locales
-                sh "docker rmi ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:${IMAGE_TAG}"
-                sh "docker rmi ${DOCKER_CREDENTIALS_USR}/${IMAGE_NAME}:latest"
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
+                    sh 'docker tag my-web-img $DOCKER_USER/my-new-img'
+                    sh 'docker push $DOCKER_USER/my-new-img'
+                }
+            }
+        }
+        
+        stage('Deploy in Review') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh "docker run -d -p ${DEPLOY_PORT}:80 --name deploy-${BUILD_NUMBER} $DOCKER_USER/my-new-img"
+                }
             }
         }
     }
     
     post {
-        success {
-            echo "Pipeline exécuté avec succès! L'image a été construite et publiée sur Docker Hub."
+        always {
+            script {
+                try {
+                    // Nettoyer le conteneur de test
+                    sh "docker rm -f ${CONTAINER_NAME} || true"
+                    
+                    // Supprimer les images Docker
+                    sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker stop'
+                    sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker rm'
+                    
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh 'docker ps -q --filter "ancestor=$DOCKER_USER/my-new-img" | xargs -r docker stop'
+                        sh 'docker ps -q --filter "ancestor=$DOCKER_USER/my-new-img" | xargs -r docker rm'
+                    }
+                } catch (Exception e) {
+                    echo "Error during cleanup: ${e.message}"
+                }
+            }
         }
+        
         failure {
-            echo "Échec de l'exécution du pipeline. Vérifiez les logs pour plus de détails."
+            echo "Pipeline échoué. Veuillez vérifier les logs pour plus de détails."
+        }
+        
+        success {
+            echo "Pipeline réussi. L'application est déployée et disponible sur le port ${DEPLOY_PORT}."
         }
     }
 }
