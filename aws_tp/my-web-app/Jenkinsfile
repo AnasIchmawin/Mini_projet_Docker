@@ -69,10 +69,22 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh "docker rm -f deploy-${BUILD_NUMBER} || true"
                     sh "docker run -d -p ${DEPLOY_PORT}:80 --name deploy-${BUILD_NUMBER} $DOCKER_USER/my-new-img"
+                }
+            }
         }
-    }
-}
-
+        
+        stage('Start Existing Container') {
+            steps {
+                script {
+                    def containerExists = sh(script: "docker ps -a -q -f name=deploy-${BUILD_NUMBER}", returnStatus: true) == 0
+                    if (containerExists) {
+                        sh "docker start deploy-${BUILD_NUMBER}"
+                    } else {
+                        echo "Le conteneur deploy-${BUILD_NUMBER} n'existe pas."
+                    }
+                }
+            }
+        }
     }
     
     post {
