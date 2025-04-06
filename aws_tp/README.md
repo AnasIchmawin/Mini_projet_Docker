@@ -32,6 +32,38 @@ project/
 ---
 
 ## Étapes Clés
+### Test de Configuration Locale Manuel (Sans Utilisation de Jenkins)
+
+#### Étapes :
+1. **Construire l'image Docker localement :**
+    ```bash
+    $ docker build -t my-web-img .
+    ```
+
+    <img src="images/22.jpg" style="border-radius: 7px;" width="500">
+
+2. **Exécuter le conteneur Docker :**
+    ```bash
+    $ docker run -d -p 8081:80 my-web-img
+    ```
+
+    <img src="images/23.jpg" style="border-radius: 7px;" width="500">
+
+3. **Vérifier le déploiement local :**
+    ```bash
+    $ curl http://localhost:8081
+    ```
+
+    <img src="images/24.jpg" style="border-radius: 7px;" width="500">
+
+    accéder à l'application web via `http://localhost:8081` dans le navigateur.
+
+    <img src="images/25.jpg" style="border-radius: 7px;" width="500">
+
+
+#### Résultat :
+- L'application web est déployée et accessible localement sans utiliser Jenkins.
+- Cette méthode permet de tester rapidement les modifications avant de les intégrer dans un pipeline CI/CD.
 ### Configuration de l'Environnement AWS
 
 #### Compte AWS
@@ -131,6 +163,102 @@ project/
 - Configuration de l'instance Jenkins en ajoutant URL de jenkins et le mot de passe d'accès.
 
     <img src="images/21.jpeg" style="border-radius: 7px;" width="500">
+
+### Connexion Docker sur AWS et Transfert de Fichiers avec SCP
+
+#### Connexion Docker sur l'Instance AWS
+- Connectez-vous à Docker Hub depuis l'instance EC2 pour pouvoir pousser ou tirer des images Docker :
+    ```bash
+    $ docker login
+    ```
+    - Entrez vos identifiants Docker Hub lorsque vous y êtes invité.
+    - Si l'authentification réussit, un message de confirmation s'affichera : `Login Succeeded`.
+
+    <img src="images/26.jpg" style="border-radius: 7px;" width="500">
+
+#### Transfert de Fichiers Locaux vers AWS avec SCP
+- Utilisez la commande `scp` pour copier les fichiers nécessaires depuis votre machine locale vers l'instance EC2.
+
+    ```bash
+    $ scp -i my_key.pem -r c/My-GitHub/Mini_projet_Docker/aws_tp/my-web-app/ ubuntu@ec2-16-171-254-119.eu-north-1.compute.amazonaws.com:~/my-web-app
+    ```
+
+    <img src="images/27.jpg" style="border-radius: 7px;" width="500">
+
+#### Construction et Push d'une Image Docker sur Docker Hub depuis AWS
+#### Étapes :
+
+1. **Construire l'image Docker sur l'instance AWS :**
+    ```bash
+    $ docker build -t my-web-img .
+    ```
+
+    <img src="images/28.jpg" style="border-radius: 7px;" width="500">
+
+2. **Pousser l'image vers Docker Hub :**
+    ```bash
+    $ docker tag my-web-img fatihmedamine/my-web-img
+    $ docker push fatihmedamine/my-web-img
+    ```
+
+    <img src="images/29.jpg" style="border-radius: 7px;" width="500">
+
+    Cette commande upload votre image vers votre dépôt Docker Hub.
+
+    <img src="images/30.jpg" style="border-radius: 7px;" width="500">
+
+
+### CI-CD-Pipeline
+
+#### Création d'un Pipeline CI/CD sur Jenkins
+
+1. **Création d'un nouveau projet :**
+    
+    <img src="images/31.png" style="border-radius: 7px;" width="500">
+
+3. **Configuration du pipeline :**
+    
+    <img src="images/32.png" style="border-radius: 7px;" width="500">
+
+    <img src="images/33.png" style="border-radius: 7px;" width="500">
+
+    <img src="images/34.jpg" style="border-radius: 7px;" width="500">
+
+4. **Configuration des étapes du pipeline dans le `Jenkinsfile` :**
+    - Exemple de contenu pour un pipeline CI/CD :
+      ```groovy
+      pipeline {
+            agent any
+            stages {
+                 stage('Build') {
+                      steps {
+                            sh 'docker build -t my-web-img .'
+                      }
+                 }
+                 stage('Test') {
+                      steps {
+                            sh 'docker run --rm my-web-img /bin/sh -c "echo Tests Passed"'
+                      }
+                 }
+                 stage('Deploy') {
+                      steps {
+                            sh 'docker tag my-web-img fatihmedamine/my-web-img'
+                            sh 'docker push fatihmedamine/my-web-img'
+                      }
+                 }
+            }
+      }
+      ```
+
+5. **Enregistrement et exécution du pipeline :**
+    
+    <img src="images/35.png" style="border-radius: 7px;" width="500">
+
+    <img src="images/36.png" style="border-radius: 7px;" width="500">
+
+    <img src="images/37.png" style="border-radius: 7px;" width="500">
+
+    <img src="images/38.png" style="border-radius: 7px;" width="500">
 
 ## Conclusion
 Ce TP a permis de maîtriser :
