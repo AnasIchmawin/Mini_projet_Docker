@@ -174,7 +174,7 @@ my-web-app/
 
     <img src="images/19.jpeg" style="border-radius: 7px;" width="500">
 
-- Accès à l'interface web de Jenkins via `http://<adresse_ip_ec2>:8080` et récupération du mot de passe d'initialisation dans le fichier `/var/lib/jenkins/secrets/initialAdminPassword`.
+- Accès à l'interface web de Jenkins via `http://ec2-16-171-254-119.eu-north-1.compute.amazonaws.com/:8080` et récupération du mot de passe d'initialisation dans le fichier `/var/lib/jenkins/secrets/initialAdminPassword`.
 
     <img src="images/20.jpeg" style="border-radius: 7px;" width="500">
 
