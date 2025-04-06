@@ -101,30 +101,41 @@ pipeline {
         }
     }
     
-    post {
-        always {
-            script {
-                try {
-                    sh "docker rm -f ${CONTAINER_NAME} || true"
-                    sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker stop'
-                    sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker rm'
+   post {
+    always {
+        script {
+            try {
+                // Supprimer uniquement le conteneur temporaire de test
+                sh "docker rm -f ${CONTAINER_NAME} || true"
 
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh 'docker ps -q --filter "ancestor=$DOCKER_USER/my-new-img" | xargs -r docker stop'
-                        sh 'docker ps -q --filter "ancestor=$DOCKER_USER/my-new-img" | xargs -r docker rm'
+                // Arrêter et supprimer les conteneurs de test liés à my-web-img
+                sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker stop'
+                sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker rm'
+
+                // Arrêter/supprimer les autres conteneurs sauf celui de déploiement
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    // Liste des conteneurs basés sur l'image $DOCKER_USER/my-new-img
+                    // On exclut le conteneur "deploy-${BUILD_NUMBER}"
+                    def toClean = sh(script: """
+                        docker ps -aq --filter "ancestor=$DOCKER_USER/my-new-img" | grep -v \$(docker ps -aqf "name=deploy-${BUILD_NUMBER}") || true
+                    """, returnStdout: true).trim()
+                    
+                    if (toClean) {
+                        sh "docker stop $toClean || true"
+                        sh "docker rm $toClean || true"
                     }
-                } catch (Exception e) {
-                    echo "Error during cleanup: ${e.message}"
                 }
+            } catch (Exception e) {
+                echo "Erreur lors du nettoyage : ${e.message}"
             }
         }
-        
-        failure {
-            echo "Pipeline échoué. Veuillez vérifier les logs pour plus de détails."
-        }
-        
-        success {
-            echo "Pipeline réussi. L'application est déployée et disponible sur le port ${DEPLOY_PORT}."
-        }
+    }
+
+    failure {
+        echo "❌ Pipeline échoué. Vérifiez les logs."
+    }
+
+    success {
+        echo "✅ Pipeline réussi. L'application est déployée et disponible sur le port ${DEPLOY_PORT}."
     }
 }
