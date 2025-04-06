@@ -24,13 +24,11 @@ Automatiser le déploiement d'une application web statique à travers un pipelin
 ## Structure du Projet
 
 ```
-project/
-├── app/ # Code source de l'application
-│   ├── index.html
-│   ├── styles.css
-├── Dockerfile # Configuration Docker
+my-web-app/
+├── index.html  # Page d'accueil de l'application web
+├── Dockerfile  # Configuration Docker
 ├── Jenkinsfile # Pipeline CI/CD
-└── README.md # Ce rapport
+└── README.md   # Ce rapport
 ```
 
 ---
@@ -78,7 +76,7 @@ project/
 
 #### Compte AWS
 
-- Création d'un compte AWS avec authentification MFA activée.
+- Création d'un compte AWS.
 - Abonnement à l'offre gratuite pour les services EC2.
 
 <img src="images/1.jpeg" style="border-radius: 7px;" width="500">
@@ -259,7 +257,11 @@ project/
 
     <img src="images/36.png" style="border-radius: 7px;" width="500">
 
+    Ajout de l'entrée pour le port 9090 dans le groupe de sécurité, qui est le port où j'ai déployé mon application
+
     <img src="images/37.png" style="border-radius: 7px;" width="500">
+
+    Le déploiement de l'application a réussi.
 
     <img src="images/38.png" style="border-radius: 7px;" width="500">
 
