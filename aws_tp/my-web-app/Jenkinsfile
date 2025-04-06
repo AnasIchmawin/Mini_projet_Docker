@@ -1,12 +1,12 @@
 pipeline {
     agent any
-    
+
     environment {
         APP_PORT = '8081'
         DEPLOY_PORT = '9090'
         CONTAINER_NAME = "test-container-${BUILD_NUMBER}"
     }
-    
+
     stages {
         stage('Cloner le repo') {
             steps {
@@ -14,11 +14,10 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/AnasIchmawin/Mini_projet_Docker'
             }
         }
-        
+
         stage('Nettoyer les anciens conteneurs') {
             steps {
                 script {
-                    // Nettoyer les anciens conteneurs Docker
                     sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker stop'
                     sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker rm'
 
@@ -27,7 +26,6 @@ pipeline {
                         sh 'docker ps -q --filter "ancestor=$DOCKER_USER/my-new-img" | xargs -r docker rm'
                     }
 
-                    // Vérifier si le port est occupé et tuer le processus si nécessaire
                     sh "netstat -tuln | grep ${APP_PORT} || true"
                     sh """
                         lsof -i :${APP_PORT} | grep LISTEN && {
@@ -38,7 +36,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Build') {
             steps {
                 dir('aws_tp/my-web-app') {
@@ -46,28 +44,23 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Test') {
             steps {
                 script {
-                    // Vérifier si le port est déjà utilisé
                     def portInUse = sh(script: "lsof -i :${APP_PORT}", returnStatus: true) == 0
                     if (portInUse) {
-                        // Si le port est occupé, arrêter le processus
                         echo "Le port ${APP_PORT} est déjà utilisé. Libération du port..."
                         sh "fuser -k ${APP_PORT}/tcp"
                     }
 
-                    // Démarrer le conteneur Docker
                     sh "docker run -d -p ${APP_PORT}:80 --name ${CONTAINER_NAME} my-web-img"
-
-                    // Tester si l'application fonctionne
                     sh 'sleep 5'
                     sh "curl -f http://localhost:${APP_PORT} || exit 1"
                 }
             }
         }
-        
+
         stage('Release') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -77,7 +70,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Deploy in Review') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -86,7 +79,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Start Existing Container') {
             steps {
                 script {
@@ -100,42 +93,37 @@ pipeline {
             }
         }
     }
-    
-   post {
-    always {
-        script {
-            try {
-                // Supprimer uniquement le conteneur temporaire de test
-                sh "docker rm -f ${CONTAINER_NAME} || true"
 
-                // Arrêter et supprimer les conteneurs de test liés à my-web-img
-                sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker stop'
-                sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker rm'
+    post {
+        always {
+            script {
+                try {
+                    sh "docker rm -f ${CONTAINER_NAME} || true"
+                    sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker stop'
+                    sh 'docker ps -q --filter "ancestor=my-web-img" | xargs -r docker rm'
 
-                // Arrêter/supprimer les autres conteneurs sauf celui de déploiement
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    // Liste des conteneurs basés sur l'image $DOCKER_USER/my-new-img
-                    // On exclut le conteneur "deploy-${BUILD_NUMBER}"
-                    def toClean = sh(script: """
-                        docker ps -aq --filter "ancestor=$DOCKER_USER/my-new-img" | grep -v \$(docker ps -aqf "name=deploy-${BUILD_NUMBER}") || true
-                    """, returnStdout: true).trim()
-                    
-                    if (toClean) {
-                        sh "docker stop $toClean || true"
-                        sh "docker rm $toClean || true"
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        def toClean = sh(script: """
+                            docker ps -aq --filter "ancestor=$DOCKER_USER/my-new-img" | grep -v \$(docker ps -aqf "name=deploy-${BUILD_NUMBER}") || true
+                        """, returnStdout: true).trim()
+
+                        if (toClean) {
+                            sh "docker stop $toClean || true"
+                            sh "docker rm $toClean || true"
+                        }
                     }
+                } catch (Exception e) {
+                    echo "Erreur lors du nettoyage : ${e.message}"
                 }
-            } catch (Exception e) {
-                echo "Erreur lors du nettoyage : ${e.message}"
             }
         }
-    }
 
-    failure {
-        echo "❌ Pipeline échoué. Vérifiez les logs."
-    }
+        failure {
+            echo "❌ Pipeline échoué. Vérifiez les logs."
+        }
 
-    success {
-        echo "✅ Pipeline réussi. L'application est déployée et disponible sur le port ${DEPLOY_PORT}."
+        success {
+            echo "✅ Pipeline réussi. L'application est déployée et disponible sur le port ${DEPLOY_PORT}."
+        }
     }
 }
