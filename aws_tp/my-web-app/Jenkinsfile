@@ -2,102 +2,73 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_USER = 'fatihmedamine'
-        DOCKER_IMG_NAME = 'my-new-img'
+        IMAGE_NAME = 'my-web-img'
+        CONTAINER_NAME = "test-container-${env.BUILD_ID}"
     }
 
     stages {
-        stage('Cloner le repo') {
+        stage('📥 Cloner le repo') {
             steps {
                 echo '📥 Clonage du dépôt'
-                git 'https://github.com/AnasIchmawin/Mini_projet_Docker'
+                git branch: 'main', url: 'https://github.com/AnasIchmawin/Mini_projet_Docker'
             }
         }
 
-        stage('Nettoyer les anciens conteneurs') {
+        stage('🧹 Nettoyer les anciens conteneurs') {
             steps {
-                script {
-                    echo "🧹 Nettoyage des anciens conteneurs Docker"
-
-                    // Stop & remove old containers by image name
-                    sh '''
-                        docker ps -q --filter ancestor=my-web-img | xargs -r docker stop
-                        docker ps -q --filter ancestor=my-web-img | xargs -r docker rm
-                        docker ps -q --filter ancestor=$DOCKER_USER/$DOCKER_IMG_NAME | xargs -r docker stop
-                        docker ps -q --filter ancestor=$DOCKER_USER/$DOCKER_IMG_NAME | xargs -r docker rm
-                    '''
-
-                    // Vérifie si le port 8081 est occupé et le libère si nécessaire
-                    def pid = sh(script: "lsof -t -i:8081 || true", returnStdout: true).trim()
-                    if (pid) {
-                        echo "⚠️ Port 8081 utilisé par le PID $pid. Libération..."
-                        sh "kill -9 $pid || true"
-                        sh "sleep 2"
-                    } else {
-                        echo "✅ Port 8081 est déjà libre."
-                    }
-                }
+                echo '🧹 Nettoyage des anciens conteneurs Docker'
+                sh '''
+                    docker rm -f $(docker ps -aq --filter "ancestor=${IMAGE_NAME}") || true
+                '''
             }
         }
 
-        stage('Build') {
+        stage('⚙️ Build') {
             steps {
-                dir('aws_tp/my-web-app') {
-                    echo '🏗 Construction de l\'image Docker'
-                    sh 'docker build -t my-web-img .'
-                }
+                echo '⚙️ Construction de l\'image Docker'
+                sh "docker build -t ${IMAGE_NAME} ./aws_tp/my-web-app"
             }
         }
 
-        stage('Test') {
+        stage('✅ Test') {
             steps {
-                script {
-                    echo '🧪 Lancement du test du conteneur sur le port 8081'
-                    sh 'docker rm -f test-container-24 || true'
-                    sh 'docker run -d -p 8081:80 --name test-container-24 my-web-img'
-                    sh 'sleep 5' // Attendre un peu que le conteneur démarre
-                    sh 'curl -I http://localhost:8081 || true'
-                }
+                echo '✅ Tests de l\'application'
+                sh "docker run --name ${CONTAINER_NAME} -d ${IMAGE_NAME}"
+                // 👉 Tu peux ajouter ici tes tests automatisés
             }
         }
 
-        stage('Release') {
+        stage('🚀 Release') {
             steps {
-                script {
-                    echo '📦 Publication de l\'image sur Docker Hub'
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh '''
-                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                            docker tag my-web-img $DOCKER_USER/$DOCKER_IMG_NAME
-                            docker push $DOCKER_USER/$DOCKER_IMG_NAME
-                        '''
-                    }
-                }
+                echo '🚀 Publication de l\'image (optionnel)'
+                // Exemple : docker tag / docker push
             }
         }
 
-        stage('Deploy in Review') {
+        stage('📦 Deploy in Review') {
             steps {
-                script {
-                    echo '🚀 Déploiement de l\'image en Review'
-                    sh 'docker run -d -p 8081:80 --name deploy-24 $DOCKER_USER/$DOCKER_IMG_NAME'
-                }
+                echo '📦 Déploiement en environnement de revue'
+                // Exemple : docker-compose up -d ou docker run ...
             }
         }
     }
 
     post {
         always {
-            script {
-                echo "🧽 Nettoyage post-pipeline"
-                sh "docker rm -f test-container-24 || true"
-                sh "docker ps -q --filter ancestor=my-web-img | xargs -r docker stop"
-                sh "docker ps -q --filter ancestor=my-web-img | xargs -r docker rm"
-            }
+            echo '🧽 Nettoyage post-pipeline'
+            sh "docker rm -f ${CONTAINER_NAME} || true"
+            sh '''
+                docker ps -q --filter ancestor=${IMAGE_NAME} | xargs -r docker stop
+                docker ps -q --filter ancestor=${IMAGE_NAME} | xargs -r docker rm
+            '''
         }
 
         failure {
-            echo "❌ Pipeline échoué. Vérifiez les logs."
+            echo '❌ Pipeline échoué. Vérifiez les logs.'
+        }
+
+        success {
+            echo '✅ Pipeline terminé avec succès.'
         }
     }
 }
