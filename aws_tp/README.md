@@ -24,16 +24,15 @@ Automatiser le déploiement d'une application web statique à travers un pipelin
 ## Structure du Projet
 
 ```
-project/
-├── app/ # Code source de l'application
-│   ├── index.html
-│   ├── styles.css
-├── Dockerfile # Configuration Docker
-├── Jenkinsfile # Pipeline CI/CD
-└── README.md # Ce rapport
+aws_tp
+├── images
+├── my-web-app
+│  ├── Dockerfile
+│  ├── index.html
+│  └── Jenkinsfile
+└── README.md
 ```
 
----
 
 ## Étapes Clés
 
