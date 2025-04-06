@@ -77,7 +77,7 @@ aws_tp
 
 #### Compte AWS
 
-- Création d'un compte AWS avec authentification MFA activée.
+- Création d'un compte AWS.
 - Abonnement à l'offre gratuite pour les services EC2.
 
 <img src="images/1.jpeg" style="border-radius: 7px;" width="500">
@@ -175,7 +175,7 @@ aws_tp
 
     <img src="images/19.jpeg" style="border-radius: 7px;" width="500">
 
-- Accès à l'interface web de Jenkins via `http://<adresse_ip_ec2>:8080` et récupération du mot de passe d'initialisation dans le fichier `/var/lib/jenkins/secrets/initialAdminPassword`.
+- Accès à l'interface web de Jenkins via `http://ec2-16-171-254-119.eu-north-1.compute.amazonaws.com/:8080` et récupération du mot de passe d'initialisation dans le fichier `/var/lib/jenkins/secrets/initialAdminPassword`.
 
     <img src="images/20.jpeg" style="border-radius: 7px;" width="500">
 
@@ -258,7 +258,11 @@ aws_tp
 
     <img src="images/36.png" style="border-radius: 7px;" width="500">
 
+    Ajout de l'entrée pour le port 9090 dans le groupe de sécurité, qui est le port où j'ai déployé mon application
+
     <img src="images/37.png" style="border-radius: 7px;" width="500">
+
+    Le déploiement de l'application a réussi.
 
     <img src="images/38.png" style="border-radius: 7px;" width="500">
 
